@@ -1,6 +1,7 @@
 import scrapy
 from contest.items import ContestItem
 import re
+import requests
 
 
 class ContestscraperSpider(scrapy.Spider):
@@ -27,26 +28,38 @@ class ContestscraperSpider(scrapy.Spider):
     def santize(self, to_santize):
             # print(to_santize)
             # sant tumb img
-            if to_santize[:9] == "/gen/thum":
-                id = re.match(r'^\/gen\/thumb_(.*)\..*$', to_santize)
-            # sant main img
-            else:
+            if to_santize[:5] == "/gen/":
                 id = re.match(r'^\/gen\/(.*)\..*$', to_santize)
+            # sant main img
+            # else:
+            #     id = re.match(r'^\/gen\/(.*)\..*$', to_santize)
+            # sant item
+            else:
+                id = re.match(r'^\/item\/(.*)', to_santize)
             return id.group(1)
 
     def parse_followed(self, response, contestitem):
         contestitem = contestitem
         item = ContestItem()
         try:
-            contestitem['img_id'] = self.santize(response.xpath('//div[@class="container"]//img//@src').get())
+            contestitem['img_id'] = self.santize(response.xpath('//img//@src').get())
         except Exception:
-            pass
+            contestitem['img_id'] = None
         try:
             # self.image_ids.append(img_id)
             contestitem['rating'] = response.xpath('//div[@class="container"]//p[contains(.,"Rating")]/span/text()').get()
+            if response.xpath('//span[@class="price"]'):
+                # print("xxxxx"* 100)
+                data = str(response.xpath('//span[@class="price"]//@data-price-url').get())
+                # print(data)
+                r = requests.get(self.base_url + data)
+                # print("xxxxx"* 100)
+                # print(r.json())
+                # print("xxxxx"* 100)
+                contestitem['rating'] = r.json()['value']
             # self.ratings.append(rating)
         except Exception:
-            pass
+            print("wu")
 
         if contestitem.get('img_id'):
             item['image_id'] = contestitem['img_id']
@@ -64,20 +77,26 @@ class ContestscraperSpider(scrapy.Spider):
     def parse(self, response):
         contestitem = {}
 
-        for item in response.xpath('//div[@class="row"][1]//div[@class="col-md-6"]//div[@class="gtco-icon"]'):
-            try:
-                contestitem['item_id'] = self.santize(item.xpath('.//img//@src').get())
-                # self.item_ids.append(item_id)
-            except Exception:
-                pass
+        # for item in response.xpath('//div[@class="row"][1]//div[@class="col-md-6"]//div[@class="gtco-icon"]'):
+        #     try:
+        #         contestitem['item_id'] = self.santize(item.xpath('.//img//@src').get())
+        #         # self.item_ids.append(item_id)
+        #     except Exception:
+        #         pass
         
 
         for item in response.xpath('//div[@class="row"][1]//div[@class="col-md-6"]//div[@class="gtco-copy"]'):
             try:
+                contestitem['item_id'] = self.santize(item.xpath('.//a//@href').get())
+                # self.item_ids.append(item_id)
+            except Exception as e:
+                print("wu")
+
+            try:
                 contestitem['name'] = item.xpath('.//h3//text()').get()
                 # self.names.append(name)
             except Exception:
-                pass
+                print("wu")
             try:
                 link = self.base_url + str(item.xpath('.//a/@href').get())
                 
@@ -89,7 +108,7 @@ class ContestscraperSpider(scrapy.Spider):
                      cb_kwargs={'contestitem': contestitem})
 
             except Exception:
-                pass
+                print("nothing to follow yaaa")
         
         try:
             next_page = str(response.xpath('//div[@class="row"][2]//a[contains(.,"Next Page")]/@href').get())
@@ -99,7 +118,7 @@ class ContestscraperSpider(scrapy.Spider):
                         callback=self.parse,
                         dont_filter=True)
         except Exception:
-            pass
+            print("no next page yaaaa")
 
         
 
