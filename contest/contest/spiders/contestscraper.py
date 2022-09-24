@@ -34,20 +34,26 @@ class ContestscraperSpider(scrapy.Spider):
                 id = re.match(r'^\/gen\/(.*)\..*$', to_santize)
             return id.group(1)
 
-    def parse_followed(self, response, item):
-        contestitem = item
+    def parse_followed(self, response, contestitem):
+        contestitem = contestitem
+        item = ContestItem()
         try:
             contestitem['img_id'] = self.santize(response.xpath('//div[@class="container"]//img//@src').get())
             # self.image_ids.append(img_id)
             contestitem['rating'] = response.xpath('//div[@class="container"]//p[contains(.,"Rating")]/span/text()').get()
             # self.ratings.append(rating)
+
         except Exception:
             pass
-        
-        yield contestitem
+        item['image_id'] = contestitem['img_id']
+        item['rating'] = contestitem['rating']
+        item['name'] = contestitem['name']
+        item['item_id'] = contestitem['item_id']
+
+        yield item
 
     def parse(self, response):
-        contestitem = ContestItem()
+        contestitem = {}
 
         for item in response.xpath('//div[@class="row"][1]//div[@class="col-md-6"]//div[@class="gtco-icon"]'):
             try:
@@ -59,7 +65,7 @@ class ContestscraperSpider(scrapy.Spider):
 
         for item in response.xpath('//div[@class="row"][1]//div[@class="col-md-6"]//div[@class="gtco-copy"]'):
             try:
-                contestitem['name'] = item.xpath('.//h3').get()
+                contestitem['name'] = item.xpath('.//h3//text()').get()
                 # self.names.append(name)
                 link = self.base_url + str(item.xpath('.//a/@href').get())
                 
@@ -68,7 +74,7 @@ class ContestscraperSpider(scrapy.Spider):
                      url=link,
                      callback=self.parse_followed,
                      dont_filter=True,
-                     cb_kwargs={'item': contestitem})
+                     cb_kwargs={'contestitem': contestitem})
 
             except Exception:
                 pass
