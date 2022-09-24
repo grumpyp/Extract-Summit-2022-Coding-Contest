@@ -1,0 +1,13 @@
+setup.py
+contest/__init__.py
+contest/items.py
+contest/middlewares.py
+contest/pipelines.py
+contest/settings.py
+contest/spiders/__init__.py
+contest/spiders/contestscraper.py
+project.egg-info/PKG-INFO
+project.egg-info/SOURCES.txt
+project.egg-info/dependency_links.txt
+project.egg-info/entry_points.txt
+project.egg-info/top_level.txt
