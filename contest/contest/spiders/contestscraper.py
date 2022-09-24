@@ -39,16 +39,25 @@ class ContestscraperSpider(scrapy.Spider):
         item = ContestItem()
         try:
             contestitem['img_id'] = self.santize(response.xpath('//div[@class="container"]//img//@src').get())
+        except Exception:
+            pass
+        try:
             # self.image_ids.append(img_id)
             contestitem['rating'] = response.xpath('//div[@class="container"]//p[contains(.,"Rating")]/span/text()').get()
             # self.ratings.append(rating)
-
         except Exception:
             pass
-        item['image_id'] = contestitem['img_id']
-        item['rating'] = contestitem['rating']
-        item['name'] = contestitem['name']
-        item['item_id'] = contestitem['item_id']
+
+        if contestitem.get('img_id'):
+            item['image_id'] = contestitem['img_id']
+        else:
+            item['image_id'] = None
+        if contestitem.get('rating'):
+            item['rating'] = contestitem['rating']
+        if contestitem.get('name'):
+            item['name'] = contestitem['name']
+        if contestitem.get('item_id'):
+            item['item_id'] = contestitem['item_id']
 
         yield item
 
@@ -67,6 +76,9 @@ class ContestscraperSpider(scrapy.Spider):
             try:
                 contestitem['name'] = item.xpath('.//h3//text()').get()
                 # self.names.append(name)
+            except Exception:
+                pass
+            try:
                 link = self.base_url + str(item.xpath('.//a/@href').get())
                 
                 # crawl landing
@@ -79,12 +91,15 @@ class ContestscraperSpider(scrapy.Spider):
             except Exception:
                 pass
         
-        next_page = str(response.xpath('//div[@class="row"][2]//a[contains(.,"Next Page")]/@href').get())
-        if next_page:
-             yield scrapy.Request(
-                      url=next_page,
-                      callback=self.parse,
-                      dont_filter=True)
+        try:
+            next_page = str(response.xpath('//div[@class="row"][2]//a[contains(.,"Next Page")]/@href').get())
+            if next_page:
+                yield scrapy.Request(
+                        url=next_page,
+                        callback=self.parse,
+                        dont_filter=True)
+        except Exception:
+            pass
 
         
 
